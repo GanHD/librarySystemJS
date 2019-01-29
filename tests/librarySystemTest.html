@@ -1,0 +1,152 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>librarySystem Tests</title>
+</head>
+
+<body>
+<script src="simpleTest.js"></script>
+<script src="../librarySystem.js"></script>
+<script type="text/javascript">
+  tests({
+    'It should be able to store libraries that have dependencies.':function(){
+      clearLibraryStorage();
+      librarySystem('name', function() {
+        return 'Gordon';
+      });
+
+      librarySystem('company', function() {
+        return 'Watch and Code';
+      });
+      librarySystem('workBlurb', function(name, company) {
+          return name + ' works at ' + company;
+        }, ['name', 'company']);
+
+      var result= librarySystem('workBlurb')
+      eq(result, 'Gordon works at Watch and Code')
+    },
+    'it should store libraries that dont have any dependencies.':function(){
+      clearLibraryStorage();
+      librarySystem('libraryWithNoDependencies', function() {
+        return 'test';
+      });
+      var result = librarySystem('libraryWithNoDependencies');
+      eq(result,  'test')
+    },
+    'It should be able to take in a single dependency that is an object and use properties of that dependency.':function(){
+      clearLibraryStorage();
+      librarySystem('test', function() {
+        return {company:'Watch and Code'};
+      });
+
+      librarySystem('company', function(dependency) {
+        return  dependency.company;
+      }, ['test']);
+      var result = librarySystem('company');
+      eq(result,  'Watch and Code')
+    },
+    'It should be able to create a library even if its dependencies havent been stored yet.': function(){
+      clearLibraryStorage();
+      librarySystem('schoolBlurb', function(name, school) {
+        return name + ' goes to ' + school;
+      }, ['myName', 'school']);
+
+      librarySystem('myName', function() {
+      return 'Kevin';
+      });
+
+      librarySystem('school', function() {
+        return 'UMBC';
+      });
+
+      var result = librarySystem('schoolBlurb'); // 'Gordon works at Watch and Code'
+      eq(result, 'Kevin goes to UMBC')
+      },
+
+    'It should run each callback function only once.': function(){
+      clearLibraryStorage();
+      var callbackCounterForSchoolBlurb = 0;
+      var callbackCounterForMyName = 0;
+      var callbackCounterForSchool = 0;
+      var schoolBlurbCallbackFunction = function(name, school) {
+        callbackCounterForSchoolBlurb++;
+        return name + ' goes to ' + school;
+      }
+      var myNameCallbackFunction = function() {
+        callbackCounterForMyName++;
+      return 'Kevin';
+      }
+      var schoolCallbackFunction = function() {
+        callbackCounterForSchool++;
+        return 'UMBC';
+      }
+      librarySystem('schoolBlurb', schoolBlurbCallbackFunction,['myName', 'school'] );
+
+      librarySystem('myName', myNameCallbackFunction);
+      librarySystem('school', schoolCallbackFunction);
+
+      var result = librarySystem('schoolBlurb'); // 'Gordon works at Watch and Code'
+      eq(result, 'Kevin goes to UMBC')
+      eq(callbackCounterForMyName,1);
+      eq(callbackCounterForSchool,1);
+      eq(callbackCounterForSchoolBlurb,1)
+    },
+
+    'It should not run the callback function several times even if librarySystem(schoolBlurb) is called Multiple times.': function(){
+      clearLibraryStorage();
+      var callbackCounterForSchoolBlurb = 0;
+      var schoolBlurbCallbackFunction = function(name, school) {
+        callbackCounterForSchoolBlurb++;
+        return name + ' goes to ' + school;
+      }
+
+      librarySystem('schoolBlurb', schoolBlurbCallbackFunction, ['myName', 'school'] );
+
+      librarySystem('myName', function() {
+      return 'Kevin';
+      });
+
+      librarySystem('schoolBlurb');
+
+      librarySystem('school', function() {
+        return 'UMBC';
+      });
+
+      librarySystem('schoolBlurb');
+
+      var result = librarySystem('schoolBlurb'); // 'Gordon works at Watch and Code'
+      eq(result, 'Kevin goes to UMBC')
+      eq(callbackCounterForSchoolBlurb, 1)
+    },
+    'It should work with multiple nested dependencies.': function () {
+      clearLibraryStorage();
+     librarySystem('objective', function (position, fun) {
+       return 'I want to work as a ' + position + ' In my free time, ' + fun;
+     }, ['position', 'fun']);
+     librarySystem('position', function () {
+       return 'front-end developer.'
+     });
+     librarySystem('fun', function (activity, destination) {
+       return 'I enjoy ' + activity + 'I want to travel to ' + destination;
+     }, ['activity', 'destination']);
+     librarySystem('activity',  function () {
+       return 'rock climbing, hiking and sailing. ';
+     });
+     librarySystem('destination',  function () {
+       return 'Jordan.'
+     });
+
+     eq(librarySystem('objective'), 'I want to work as a front-end developer. In my free time, I enjoy rock climbing, hiking and sailing. I want to travel to Jordan.');
+   },
+  })
+
+
+
+
+
+
+
+</script>
+</body>
+</html>
